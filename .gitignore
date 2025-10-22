@@ -1,6 +1,7 @@
 # Custom configuration
-test/
 example/
+output_md/
+output_images/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

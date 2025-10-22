@@ -1,10 +1,11 @@
-from paddleocr import PaddleOCR
+from paddleocr import PPStructureV3
 from warnings import filterwarnings
 import cv2
+import os
 
 filterwarnings("ignore")
 
-ocr = PaddleOCR(
+pipeline = PPStructureV3(
     lang="korean",
     use_doc_orientation_classify=False,  # Disable document orientation classification model
     use_doc_unwarping=False,  # Disable text image unwarping model
@@ -19,30 +20,37 @@ if img is None:
 
 img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-result = ocr.predict(img_rgb)
+results = pipeline.predict(img_rgb)
 
-data = []
-if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
-    # This matches your debug output
-    for page_res in result:
-        texts = page_res.get("rec_texts", [])
-        scores = page_res.get("rec_scores", [])
-        polys = page_res.get("rec_polys", [])
-        for t, s, p in zip(texts, scores, polys):
-            data.append(
-                {
-                    "text": t,
-                    "score": float(s),
-                    "poly": p.tolist() if hasattr(p, "tolist") else p,
-                }
-            )
-else:
-    # Fallback to older format
-    for line in result:
-        box = line[0]
-        text, score = line[1]
-        data.append({"text": text, "score": float(score), "box": box})
+output_md_folder = "./output_md"
+output_img_folder = "./output_images"
+os.makedirs(output_md_folder, exist_ok=True)
+os.makedirs(output_img_folder, exist_ok=True)
 
-# Print only the extracted text on the console
-for item in data:
-    print(item["text"])
+for page_index, page in enumerate(results):
+    # Extract markdown texts
+    md = page.markdown
+    texts = md.get("markdown_texts", [])
+    md_path = os.path.join(output_md_folder, f"page_{page_index + 1}.md")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(texts)
+    print(f"Markdown for page {page_index + 1} saved to {md_path}")
+
+    # Extract and save images
+    imgs_info = getattr(page, "imgs_in_doc", None)
+    if imgs_info is None:
+        imgs_info = page.get("imgs_in_doc", []) if isinstance(page, dict) else []
+
+    for img_index, img_info in enumerate(imgs_info):
+        pil_img = img_info.get("img")
+        if pil_img is None:
+            # TODO: Make a fallback logic
+            continue
+
+        img_save_path = os.path.join(
+            output_img_folder, f"page_{page_index + 1}_img_{img_index + 1}.png"
+        )
+        pil_img.save(img_save_path)
+        print(
+            f"Image for page {page_index + 1}, image {img_index + 1} saved to {img_save_path}"
+        )
