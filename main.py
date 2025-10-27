@@ -5,14 +5,16 @@ import os
 import cv2
 import typer
 import tempfile
+import logging
 from typing import List, Tuple, Any, Iterable
-from warnings import filterwarnings
 
 from paddleocr import PPStructureV3
 from pdf2image import convert_from_path
 
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
+
 app = typer.Typer(add_completion=False)
-filterwarnings("ignore")
 
 def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
