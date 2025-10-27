@@ -65,7 +65,9 @@ def run_pipeline_on_image(
         md_path = out_md_dir / f"page_{page_index:04d}_{sub_idx:02d}.md"
         mapping = {}
         for original, path in zip(original_srcs, saved_paths):
-            rel = os.path.relpath(str(path), start=str(md_path.parent)).replace(os.sep, "/")
+            # WARNING:
+            # relative_to() fails unless 'path' is under md_path.parent; relpath works across siblings.
+            rel = os.path.relpath(str(path), start=str(md_path.parent))
             mapping[original] = rel
 
         # 3) Markdown --> join + rewrite image srcs --> Finally save
